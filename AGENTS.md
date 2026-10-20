@@ -2,11 +2,28 @@
 
 ## 目的と参照順序
 本リポジトリは Ns Shift の optimizerAPI を測定・比較する**開発者向けベンチマークアプリ**です。作業開始前に以下を順に読んでください。
-1. `docs/SPECIFICATION.md`：プロダクトの完成仕様、確定・暫定・未決定事項
-2. `docs/DEVELOPMENT_PLAN.md`：現在の実装フェーズと完了条件
-3. 既存コード、テスト、README（存在する場合）
+1. `AGENTS.md`：開発上のルール
+2. `docs/SPECIFICATION.md`：プロダクトの完成仕様、確定・暫定・未決定事項
+3. `docs/DEVELOPMENT_PLAN.md`：現在の実装フェーズと完了条件
+4. `docs/GIT_WORKFLOW.md`：GitHub運用ルール
+5. 既存コード、テスト、README（存在する場合）
 
 **仕様書は完成形、開発計画は今回実装する範囲**です。仕様書全体を一度に実装してはいけません。
+
+## GitHubワークフロー
+
+- すべての実装作業は原則としてIssue単位で管理する。作業開始時に既存Issueを検索し、該当するIssueがない場合は新規作成する。
+- 1つのIssueは原則として1つの目的に限定し、1つのIssueに対して1つのPull Requestを作成する。
+- Issue作成後に、`種類/Issue番号-作業内容` の形式で作業ブランチを作成する。英小文字とハイフンを使用する。
+- ブランチ名の例：`feat/123-add-benchmark-runner`、`fix/124-fix-metrics-calculation`、`refactor/125-refactor-quality-evaluator`、`test/126-add-runner-tests`、`docs/127-update-specification`、`chore/128-update-ci`。
+- mainへの直接コミット・直接pushは禁止する。
+- コミットメッセージはConventional Commits形式とする。例：`feat: add benchmark runner`、`fix: correct night shift deviation calculation`、`test: add quality evaluator tests`、`docs: update benchmark specification`、`ci: add GitHub Actions workflow`。
+- PRには関連Issue、変更概要、テスト結果、仕様への影響を記載する。作成後はCI結果を確認し、失敗した場合は原因を修正する。
+- CIが成功しても自動マージしない。PRのマージは必ず開発者が手動で行う。
+- optimizerAPI本体の仕様変更、データベースの破壊的変更、大きなアーキテクチャ変更、既存機能の削除、仕様書にない大規模な機能追加は実装前に開発者へ確認する。
+- GitHubの認証や権限が不足して操作できない場合は、未実施の操作と必要な設定を正確に報告する。
+
+詳細な運用手順は `docs/GIT_WORKFLOW.md` を参照する。仕様書と既存コードに矛盾がある場合は、独断で大規模な変更を行わず差分を報告する。
 
 ## 開発の基本ルール
 - 既存の仕組みを確認してから小さな変更単位で実装する。推測で API スキーマやフィールドを作らない。
