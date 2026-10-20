@@ -1,0 +1,59 @@
+name: 機能追加・改善
+description: 新機能の追加や既存機能の改善を提案します
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: 実装または改善する内容を簡潔に記載してください。
+      placeholder: 追加・改善したい内容を記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景・目的
+      description: 対応が必要な理由や解決したい課題を記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: 実装内容
+      description: 想定する変更内容をチェックリストで記載してください。
+      value: |
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: completion
+    attributes:
+      label: 完了条件
+      description: Issueを完了と判断できる条件をチェックリストで記載してください。
+      value: |
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: specification
+    attributes:
+      label: 関連仕様
+      description: 関連する仕様書の節、開発計画、Issueなどを記載してください。
+      placeholder: 例：docs/SPECIFICATION.md 5.2
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足
+      description: 参考資料や設計上の注意点があれば記載してください。
+    validations:
+      required: false
