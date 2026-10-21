@@ -1,0 +1,165 @@
+{
+  "generation": "phase2-v1",
+  "target_month": "2026-11",
+  "case_count": 16,
+  "dataset_hash": "72e2db36dafa7ae8b8ee1da2c67f8909498c6297f2567f2612c8fb11c506f629",
+  "generation_policy": {
+    "day_staff_ratio": "35%（四捨五入）",
+    "night_staff_ratio": "15%（切り捨て、最低1人）",
+    "leader_ratio": "45%（四捨五入）",
+    "monthly_off_days": 10,
+    "max_consecutive_work_days": 5,
+    "patterns": {
+      "baseline": "追加希望休なし",
+      "random_requests": "希望休を1人2日配置",
+      "fixed_assignments": "希望休と固定勤務を配置",
+      "stress": "希望休を1人3〜4日集中配置"
+    }
+  },
+  "cases": [
+    {
+      "case_id": "phase2-v1-10-baseline",
+      "name": "10人 baseline",
+      "staff_count": 10,
+      "pattern": "baseline",
+      "seed": 20261200,
+      "path": "cases/10-baseline.json",
+      "input_hash": "944721c36733a242df37775467245fb927eec8ada79f2265d29ad4d450138c42"
+    },
+    {
+      "case_id": "phase2-v1-10-random_requests",
+      "name": "10人 random_requests",
+      "staff_count": 10,
+      "pattern": "random_requests",
+      "seed": 20261201,
+      "path": "cases/10-random_requests.json",
+      "input_hash": "d515c3535c565dd566050c582b716befde620f37e66c49e2f5f364f490f55fee"
+    },
+    {
+      "case_id": "phase2-v1-10-fixed_assignments",
+      "name": "10人 fixed_assignments",
+      "staff_count": 10,
+      "pattern": "fixed_assignments",
+      "seed": 20261202,
+      "path": "cases/10-fixed_assignments.json",
+      "input_hash": "994fad86b09f42a58dff45422fd15b46aa47274c1e0deacf183498ebf956118c"
+    },
+    {
+      "case_id": "phase2-v1-10-stress",
+      "name": "10人 stress",
+      "staff_count": 10,
+      "pattern": "stress",
+      "seed": 20261203,
+      "path": "cases/10-stress.json",
+      "input_hash": "739740031a3152b1a32463949f90e91dbdf1853f6b244b5aef4bee8d7e9b92d7"
+    },
+    {
+      "case_id": "phase2-v1-20-baseline",
+      "name": "20人 baseline",
+      "staff_count": 20,
+      "pattern": "baseline",
+      "seed": 20261300,
+      "path": "cases/20-baseline.json",
+      "input_hash": "134237874948cdaa425773a136ab8ed81fb0a2bd6760993b069180a097669cbb"
+    },
+    {
+      "case_id": "phase2-v1-20-random_requests",
+      "name": "20人 random_requests",
+      "staff_count": 20,
+      "pattern": "random_requests",
+      "seed": 20261301,
+      "path": "cases/20-random_requests.json",
+      "input_hash": "7c670d6d87f80f642a51dae4eb0f6b8795c9c65ac918f79f27a606f89f192a48"
+    },
+    {
+      "case_id": "phase2-v1-20-fixed_assignments",
+      "name": "20人 fixed_assignments",
+      "staff_count": 20,
+      "pattern": "fixed_assignments",
+      "seed": 20261302,
+      "path": "cases/20-fixed_assignments.json",
+      "input_hash": "4d8adb5dafa7ba494b9222869b3254f806d9fc28ec2f55e18a3dd0bd19d08ff9"
+    },
+    {
+      "case_id": "phase2-v1-20-stress",
+      "name": "20人 stress",
+      "staff_count": 20,
+      "pattern": "stress",
+      "seed": 20261303,
+      "path": "cases/20-stress.json",
+      "input_hash": "30ab31dd6da3e529350415ac5f6f9deea07ca31684a2ff93c3c12f8a7fe7eb76"
+    },
+    {
+      "case_id": "phase2-v1-30-baseline",
+      "name": "30人 baseline",
+      "staff_count": 30,
+      "pattern": "baseline",
+      "seed": 20261400,
+      "path": "cases/30-baseline.json",
+      "input_hash": "2e0a98ba4c664573a40229261ee092499115c6fb181c6e6a04f2618c9377b342"
+    },
+    {
+      "case_id": "phase2-v1-30-random_requests",
+      "name": "30人 random_requests",
+      "staff_count": 30,
+      "pattern": "random_requests",
+      "seed": 20261401,
+      "path": "cases/30-random_requests.json",
+      "input_hash": "1b974fb2cf2609c411aeeb05ed7a63d2e38cef624dcefd17b335f8edef682a3b"
+    },
+    {
+      "case_id": "phase2-v1-30-fixed_assignments",
+      "name": "30人 fixed_assignments",
+      "staff_count": 30,
+      "pattern": "fixed_assignments",
+      "seed": 20261402,
+      "path": "cases/30-fixed_assignments.json",
+      "input_hash": "1006308251eea46cf12f22228a1d1b841b10a6ed0fc5cb2d6cd91637a784a7fd"
+    },
+    {
+      "case_id": "phase2-v1-30-stress",
+      "name": "30人 stress",
+      "staff_count": 30,
+      "pattern": "stress",
+      "seed": 20261403,
+      "path": "cases/30-stress.json",
+      "input_hash": "9fb6bb0fc0d2df51fabab90b1f1ee5cfe062cf0ab9c77c065f82f28fd62b1276"
+    },
+    {
+      "case_id": "phase2-v1-40-baseline",
+      "name": "40人 baseline",
+      "staff_count": 40,
+      "pattern": "baseline",
+      "seed": 20261500,
+      "path": "cases/40-baseline.json",
+      "input_hash": "a09c56e282f9b26ee5542af14960ebe3c31d4798bd1d8ab618c956c91e826aca"
+    },
+    {
+      "case_id": "phase2-v1-40-random_requests",
+      "name": "40人 random_requests",
+      "staff_count": 40,
+      "pattern": "random_requests",
+      "seed": 20261501,
+      "path": "cases/40-random_requests.json",
+      "input_hash": "16be87440b4f9209098b86354ee455ff0497d8a55c9e1a8782c9444bfc6c8600"
+    },
+    {
+      "case_id": "phase2-v1-40-fixed_assignments",
+      "name": "40人 fixed_assignments",
+      "staff_count": 40,
+      "pattern": "fixed_assignments",
+      "seed": 20261502,
+      "path": "cases/40-fixed_assignments.json",
+      "input_hash": "701704c20008d2734b18ace7ace5b69c9c416a1892947094ead64d39c8d1b0bd"
+    },
+    {
+      "case_id": "phase2-v1-40-stress",
+      "name": "40人 stress",
+      "staff_count": 40,
+      "pattern": "stress",
+      "seed": 20261503,
+      "path": "cases/40-stress.json",
+      "input_hash": "36aefad90f2d6520553178fc758055b2d706d4d37a2daadda18face9f022feb4"
+    }
+  ]
+}

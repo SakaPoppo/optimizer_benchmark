@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import json
+import math
 import sqlite3
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .models import ApiCallResult, BenchmarkCase, QualityEvaluation
+from .models import (
+    ApiCallResult,
+    BenchmarkCase,
+    BenchmarkDataset,
+    QualityEvaluation,
+)
 
 SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -17,6 +23,15 @@ CREATE TABLE IF NOT EXISTS api_versions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     change_summary TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS datasets (
+    generation TEXT PRIMARY KEY,
+    manifest_path TEXT NOT NULL,
+    manifest_hash TEXT NOT NULL,
+    dataset_hash TEXT NOT NULL,
+    case_count INTEGER NOT NULL,
     created_at TEXT NOT NULL
 );
 
@@ -37,6 +52,21 @@ CREATE TABLE IF NOT EXISTS benchmark_runs (
     version_id INTEGER NOT NULL REFERENCES api_versions(id),
     case_id TEXT NOT NULL REFERENCES benchmark_cases(case_id),
     input_hash TEXT NOT NULL,
+    api_url TEXT NOT NULL,
+    status TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    environment_json TEXT NOT NULL,
+    suite_id INTEGER REFERENCES benchmark_suites(id),
+    planned_trials INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS benchmark_suites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    version_id INTEGER NOT NULL REFERENCES api_versions(id),
+    dataset_generation TEXT NOT NULL REFERENCES datasets(generation),
+    mode TEXT NOT NULL,
+    trials_per_case INTEGER NOT NULL,
     api_url TEXT NOT NULL,
     status TEXT NOT NULL,
     started_at TEXT NOT NULL,
@@ -82,6 +112,7 @@ ON benchmark_runs(version_id, started_at);
 
 CREATE INDEX IF NOT EXISTS benchmark_trials_run_idx
 ON benchmark_trials(run_id, trial_number);
+
 """
 
 
@@ -93,12 +124,39 @@ def _json(value) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True)
 
 
+def _percentile(values: list[float], percentile: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    index = max(0, math.ceil(percentile * len(ordered)) - 1)
+    return ordered[index]
+
+
 class BenchmarkStorage:
     def __init__(self, database_path: Path) -> None:
         self.database_path = database_path
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as connection:
             connection.executescript(SCHEMA)
+            self._migrate(connection)
+
+    @staticmethod
+    def _migrate(connection: sqlite3.Connection) -> None:
+        columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(benchmark_runs)")
+        }
+        if "suite_id" not in columns:
+            connection.execute("ALTER TABLE benchmark_runs ADD COLUMN suite_id INTEGER")
+        if "planned_trials" not in columns:
+            connection.execute(
+                "ALTER TABLE benchmark_runs "
+                "ADD COLUMN planned_trials INTEGER NOT NULL DEFAULT 1"
+            )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS benchmark_runs_suite_idx "
+            "ON benchmark_runs(suite_id, id)"
+        )
 
     @contextmanager
     def _connect(self):
@@ -164,6 +222,38 @@ class BenchmarkStorage:
                 ),
             )
 
+    def register_dataset(self, dataset: BenchmarkDataset) -> None:
+        with self._connect() as connection:
+            existing = connection.execute(
+                "SELECT manifest_hash, dataset_hash FROM datasets WHERE generation = ?",
+                (dataset.generation,),
+            ).fetchone()
+            if existing:
+                if (
+                    existing["manifest_hash"] != dataset.manifest_hash
+                    or existing["dataset_hash"] != dataset.dataset_hash
+                ):
+                    raise ValueError(
+                        "同じデータセット世代に異なるmanifestは登録できません。"
+                    )
+                return
+            connection.execute(
+                """
+                INSERT INTO datasets(
+                    generation, manifest_path, manifest_hash, dataset_hash,
+                    case_count, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    dataset.generation,
+                    str(dataset.manifest_path),
+                    dataset.manifest_hash,
+                    dataset.dataset_hash,
+                    len(dataset.cases),
+                    _now(),
+                ),
+            )
+
     def create_run(
         self,
         *,
@@ -171,19 +261,53 @@ class BenchmarkStorage:
         case: BenchmarkCase,
         api_url: str,
         environment: dict,
+        suite_id: int | None = None,
+        planned_trials: int = 1,
     ) -> int:
         with self._connect() as connection:
             cursor = connection.execute(
                 """
                 INSERT INTO benchmark_runs(
                     version_id, case_id, input_hash, api_url, status,
-                    started_at, environment_json
-                ) VALUES (?, ?, ?, ?, 'running', ?, ?)
+                    started_at, environment_json, suite_id, planned_trials
+                ) VALUES (?, ?, ?, ?, 'running', ?, ?, ?, ?)
                 """,
                 (
                     version_id,
                     case.case_id,
                     case.input_hash,
+                    api_url,
+                    _now(),
+                    _json(environment),
+                    suite_id,
+                    planned_trials,
+                ),
+            )
+            return int(cursor.lastrowid)
+
+    def create_suite(
+        self,
+        *,
+        version_id: int,
+        dataset: BenchmarkDataset,
+        mode: str,
+        trials_per_case: int,
+        api_url: str,
+        environment: dict,
+    ) -> int:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO benchmark_suites(
+                    version_id, dataset_generation, mode, trials_per_case,
+                    api_url, status, started_at, environment_json
+                ) VALUES (?, ?, ?, ?, ?, 'running', ?, ?)
+                """,
+                (
+                    version_id,
+                    dataset.generation,
+                    mode,
+                    trials_per_case,
                     api_url,
                     _now(),
                     _json(environment),
@@ -202,6 +326,18 @@ class BenchmarkStorage:
                 (status, _now(), run_id),
             )
 
+    def set_suite_status(self, suite_id: int, status: str) -> None:
+        completed_at = _now() if status in {"completed", "interrupted"} else None
+        with self._connect() as connection:
+            connection.execute(
+                """
+                UPDATE benchmark_suites
+                SET status = ?, completed_at = ?
+                WHERE id = ?
+                """,
+                (status, completed_at, suite_id),
+            )
+
     def record_trial(
         self,
         *,
@@ -209,6 +345,7 @@ class BenchmarkStorage:
         result: ApiCallResult,
         input_path: Path,
         response_path: Path | None,
+        trial_number: int = 1,
     ) -> int:
         response = result.response_body or {}
         with self._connect() as connection:
@@ -219,10 +356,11 @@ class BenchmarkStorage:
                     response_status, solver_status, error_type, error_message,
                     input_path, response_path, phase_results_json, issues_json,
                     internal_elapsed_seconds, cpu_percent, peak_memory_mb, created_at
-                ) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?)
                 """,
                 (
                     run_id,
+                    trial_number,
                     result.status,
                     result.http_status,
                     result.elapsed_seconds,
@@ -238,6 +376,122 @@ class BenchmarkStorage:
                 ),
             )
             return int(cursor.lastrowid)
+
+    def get_suite(self, suite_id: int) -> dict:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT s.*, v.name AS version_name, v.change_summary,
+                       d.manifest_path, d.manifest_hash, d.dataset_hash,
+                       d.case_count
+                FROM benchmark_suites s
+                JOIN api_versions v ON v.id = s.version_id
+                JOIN datasets d ON d.generation = s.dataset_generation
+                WHERE s.id = ?
+                """,
+                (suite_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(f"benchmark suite {suite_id} は存在しません。")
+        value = dict(row)
+        value["environment"] = json.loads(value.pop("environment_json"))
+        return value
+
+    def get_suite_work_items(self, suite_id: int) -> list[dict]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT r.id AS run_id, r.case_id, r.planned_trials, r.status,
+                       c.staff_count, c.pattern, c.seed, c.input_hash,
+                       GROUP_CONCAT(t.trial_number) AS completed_trial_numbers
+                FROM benchmark_runs r
+                JOIN benchmark_cases c ON c.case_id = r.case_id
+                LEFT JOIN benchmark_trials t ON t.run_id = r.id
+                WHERE r.suite_id = ?
+                GROUP BY r.id
+                ORDER BY c.staff_count, c.pattern
+                """,
+                (suite_id,),
+            ).fetchall()
+        items = []
+        for row in rows:
+            item = dict(row)
+            raw_numbers = item.pop("completed_trial_numbers")
+            item["completed_trial_numbers"] = {
+                int(value) for value in raw_numbers.split(",")
+            } if raw_numbers else set()
+            items.append(item)
+        return items
+
+    def list_suites(self) -> list[dict]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT s.id, s.mode, s.status, s.started_at, s.completed_at,
+                       s.dataset_generation, s.trials_per_case,
+                       v.name AS version_name,
+                       COUNT(t.id) AS completed_trials,
+                       COUNT(DISTINCT r.id) * s.trials_per_case AS total_trials
+                FROM benchmark_suites s
+                JOIN api_versions v ON v.id = s.version_id
+                LEFT JOIN benchmark_runs r ON r.suite_id = s.id
+                LEFT JOIN benchmark_trials t ON t.run_id = r.id
+                GROUP BY s.id
+                ORDER BY s.id DESC
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_suite_summary(self, suite_id: int) -> dict:
+        suite = self.get_suite(suite_id)
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT c.case_id, c.name AS case_name, c.staff_count, c.pattern,
+                       r.id AS run_id, r.planned_trials,
+                       COUNT(t.id) AS completed_trials,
+                       SUM(CASE WHEN t.status = 'success' THEN 1 ELSE 0 END)
+                           AS successful_trials,
+                       AVG(t.elapsed_seconds) AS average_elapsed_seconds,
+                       MIN(t.elapsed_seconds) AS minimum_elapsed_seconds,
+                       MAX(t.elapsed_seconds) AS maximum_elapsed_seconds,
+                       AVG(q.hard_violation_count) AS average_hard_violations
+                FROM benchmark_runs r
+                JOIN benchmark_cases c ON c.case_id = r.case_id
+                LEFT JOIN benchmark_trials t ON t.run_id = r.id
+                LEFT JOIN quality_metrics q ON q.trial_id = t.id
+                WHERE r.suite_id = ?
+                GROUP BY r.id
+                ORDER BY c.staff_count, c.pattern
+                """,
+                (suite_id,),
+            ).fetchall()
+            elapsed_rows = connection.execute(
+                """
+                SELECT t.elapsed_seconds, t.status
+                FROM benchmark_trials t
+                JOIN benchmark_runs r ON r.id = t.run_id
+                WHERE r.suite_id = ?
+                ORDER BY t.elapsed_seconds
+                """,
+                (suite_id,),
+            ).fetchall()
+        case_results = [dict(row) for row in rows]
+        elapsed = [float(row["elapsed_seconds"]) for row in elapsed_rows]
+        successful = sum(row["status"] == "success" for row in elapsed_rows)
+        completed = len(elapsed_rows)
+        total = len(case_results) * int(suite["trials_per_case"])
+        return {
+            **suite,
+            "completed_trials": completed,
+            "total_trials": total,
+            "successful_trials": successful,
+            "success_rate": successful / completed if completed else None,
+            "average_elapsed_seconds": sum(elapsed) / completed if completed else None,
+            "median_elapsed_seconds": _percentile(elapsed, 0.5),
+            "p95_elapsed_seconds": _percentile(elapsed, 0.95),
+            "case_results": case_results,
+        }
 
     def record_quality(self, trial_id: int, quality: QualityEvaluation) -> None:
         with self._connect() as connection:
@@ -271,6 +525,7 @@ class BenchmarkStorage:
                 FROM benchmark_runs r
                 JOIN api_versions v ON v.id = r.version_id
                 JOIN benchmark_cases c ON c.case_id = r.case_id
+                WHERE r.suite_id IS NULL
                 ORDER BY r.id DESC
                 """
             ).fetchall()
