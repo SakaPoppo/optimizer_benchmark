@@ -1,0 +1,1369 @@
+{
+  "month_dates": [
+    "2026-11-01",
+    "2026-11-02",
+    "2026-11-03",
+    "2026-11-04",
+    "2026-11-05",
+    "2026-11-06",
+    "2026-11-07",
+    "2026-11-08",
+    "2026-11-09",
+    "2026-11-10",
+    "2026-11-11",
+    "2026-11-12",
+    "2026-11-13",
+    "2026-11-14",
+    "2026-11-15",
+    "2026-11-16",
+    "2026-11-17",
+    "2026-11-18",
+    "2026-11-19",
+    "2026-11-20",
+    "2026-11-21",
+    "2026-11-22",
+    "2026-11-23",
+    "2026-11-24",
+    "2026-11-25",
+    "2026-11-26",
+    "2026-11-27",
+    "2026-11-28",
+    "2026-11-29",
+    "2026-11-30"
+  ],
+  "staff_members": [
+    {
+      "id": 1,
+      "role": "leader",
+      "ability_level": 5,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 2,
+      "role": "leader",
+      "ability_level": 5,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 3,
+      "role": "leader",
+      "ability_level": 5,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 4,
+      "role": "leader",
+      "ability_level": 5,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 5,
+      "role": "leader",
+      "ability_level": 4,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 6,
+      "role": "leader",
+      "ability_level": 4,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 7,
+      "role": "leader",
+      "ability_level": 4,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 8,
+      "role": "leader",
+      "ability_level": 4,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 9,
+      "role": "leader",
+      "ability_level": 4,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 10,
+      "role": "leader",
+      "ability_level": 4,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 11,
+      "role": "leader",
+      "ability_level": 4,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 12,
+      "role": "leader",
+      "ability_level": 4,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 13,
+      "role": "leader",
+      "ability_level": 3,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 14,
+      "role": "leader",
+      "ability_level": 3,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 15,
+      "role": "leader",
+      "ability_level": 3,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 16,
+      "role": "leader",
+      "ability_level": 3,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 17,
+      "role": "leader",
+      "ability_level": 3,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 18,
+      "role": "leader",
+      "ability_level": 3,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 19,
+      "role": "member",
+      "ability_level": 3,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 20,
+      "role": "member",
+      "ability_level": 3,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 21,
+      "role": "member",
+      "ability_level": 3,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 22,
+      "role": "member",
+      "ability_level": 3,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 23,
+      "role": "member",
+      "ability_level": 2,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 24,
+      "role": "member",
+      "ability_level": 2,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 25,
+      "role": "member",
+      "ability_level": 2,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 26,
+      "role": "member",
+      "ability_level": 2,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 27,
+      "role": "member",
+      "ability_level": 2,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 28,
+      "role": "member",
+      "ability_level": 2,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 29,
+      "role": "member",
+      "ability_level": 2,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 30,
+      "role": "member",
+      "ability_level": 2,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 31,
+      "role": "member",
+      "ability_level": 2,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 32,
+      "role": "member",
+      "ability_level": 2,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 33,
+      "role": "member",
+      "ability_level": 1,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 34,
+      "role": "member",
+      "ability_level": 1,
+      "can_night_shift": true,
+      "regular_days_off": []
+    },
+    {
+      "id": 35,
+      "role": "member",
+      "ability_level": 1,
+      "can_night_shift": true,
+      "regular_days_off": [
+        2
+      ]
+    },
+    {
+      "id": 36,
+      "role": "member",
+      "ability_level": 1,
+      "can_night_shift": true,
+      "regular_days_off": [
+        5
+      ]
+    },
+    {
+      "id": 37,
+      "role": "member",
+      "ability_level": 1,
+      "can_night_shift": true,
+      "regular_days_off": [
+        6
+      ]
+    },
+    {
+      "id": 38,
+      "role": "member",
+      "ability_level": 1,
+      "can_night_shift": true,
+      "regular_days_off": [
+        2
+      ]
+    },
+    {
+      "id": 39,
+      "role": "member",
+      "ability_level": 1,
+      "can_night_shift": true,
+      "regular_days_off": [
+        5
+      ]
+    },
+    {
+      "id": 40,
+      "role": "member",
+      "ability_level": 1,
+      "can_night_shift": true,
+      "regular_days_off": [
+        6
+      ]
+    }
+  ],
+  "fixed_assignments": [
+    {
+      "staff_id": 2,
+      "date": "2026-11-01",
+      "shift_type": "after_night"
+    },
+    {
+      "staff_id": 2,
+      "date": "2026-11-02",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 4,
+      "date": "2026-11-01",
+      "shift_type": "after_night"
+    },
+    {
+      "staff_id": 4,
+      "date": "2026-11-02",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 6,
+      "date": "2026-11-01",
+      "shift_type": "after_night"
+    },
+    {
+      "staff_id": 6,
+      "date": "2026-11-02",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 8,
+      "date": "2026-11-01",
+      "shift_type": "after_night"
+    },
+    {
+      "staff_id": 8,
+      "date": "2026-11-02",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 10,
+      "date": "2026-11-01",
+      "shift_type": "after_night"
+    },
+    {
+      "staff_id": 10,
+      "date": "2026-11-02",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 12,
+      "date": "2026-11-01",
+      "shift_type": "after_night"
+    },
+    {
+      "staff_id": 12,
+      "date": "2026-11-02",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 14,
+      "date": "2026-11-01",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 16,
+      "date": "2026-11-01",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 18,
+      "date": "2026-11-01",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 20,
+      "date": "2026-11-01",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 22,
+      "date": "2026-11-01",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 24,
+      "date": "2026-11-01",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 35,
+      "date": "2026-11-04",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 35,
+      "date": "2026-11-11",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 35,
+      "date": "2026-11-18",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 35,
+      "date": "2026-11-25",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 36,
+      "date": "2026-11-07",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 36,
+      "date": "2026-11-14",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 36,
+      "date": "2026-11-21",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 36,
+      "date": "2026-11-28",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 37,
+      "date": "2026-11-01",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 37,
+      "date": "2026-11-08",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 37,
+      "date": "2026-11-15",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 37,
+      "date": "2026-11-22",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 37,
+      "date": "2026-11-29",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 38,
+      "date": "2026-11-04",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 38,
+      "date": "2026-11-11",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 38,
+      "date": "2026-11-18",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 38,
+      "date": "2026-11-25",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 39,
+      "date": "2026-11-07",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 39,
+      "date": "2026-11-14",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 39,
+      "date": "2026-11-21",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 39,
+      "date": "2026-11-28",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 40,
+      "date": "2026-11-01",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 40,
+      "date": "2026-11-08",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 40,
+      "date": "2026-11-15",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 40,
+      "date": "2026-11-22",
+      "shift_type": "off"
+    },
+    {
+      "staff_id": 40,
+      "date": "2026-11-29",
+      "shift_type": "off"
+    }
+  ],
+  "effective_rules": [
+    {
+      "date": "2026-11-01",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-02",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-03",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-04",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-05",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-06",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-07",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-08",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-09",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-10",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-11",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-12",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-13",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-14",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-15",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-16",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-17",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-18",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-19",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-20",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-21",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-22",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-23",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-24",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-25",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-26",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-27",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-28",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-29",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    },
+    {
+      "date": "2026-11-30",
+      "required_day_staff": 14,
+      "required_day_staff_override": null,
+      "required_night_staff": 6,
+      "required_leader_staff": 1,
+      "min_ability_level": null,
+      "min_ability_level_staff_count": null,
+      "max_consecutive_work_days": 5,
+      "night_shift_next_day_off": true
+    }
+  ],
+  "previous_consecutive_work_days": [
+    {
+      "staff_id": 1,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 2,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 3,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 4,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 5,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 6,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 7,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 8,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 9,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 10,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 11,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 12,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 13,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 14,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 15,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 16,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 17,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 18,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 19,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 20,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 21,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 22,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 23,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 24,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 25,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 26,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 27,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 28,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 29,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 30,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 31,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 32,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 33,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 34,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 35,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 36,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 37,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 38,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 39,
+      "previous_consecutive_work_days": 0
+    },
+    {
+      "staff_id": 40,
+      "previous_consecutive_work_days": 0
+    }
+  ],
+  "effective_off_days": [
+    {
+      "staff_id": 1,
+      "off_days": 10
+    },
+    {
+      "staff_id": 2,
+      "off_days": 10
+    },
+    {
+      "staff_id": 3,
+      "off_days": 10
+    },
+    {
+      "staff_id": 4,
+      "off_days": 10
+    },
+    {
+      "staff_id": 5,
+      "off_days": 10
+    },
+    {
+      "staff_id": 6,
+      "off_days": 10
+    },
+    {
+      "staff_id": 7,
+      "off_days": 10
+    },
+    {
+      "staff_id": 8,
+      "off_days": 10
+    },
+    {
+      "staff_id": 9,
+      "off_days": 10
+    },
+    {
+      "staff_id": 10,
+      "off_days": 10
+    },
+    {
+      "staff_id": 11,
+      "off_days": 10
+    },
+    {
+      "staff_id": 12,
+      "off_days": 10
+    },
+    {
+      "staff_id": 13,
+      "off_days": 10
+    },
+    {
+      "staff_id": 14,
+      "off_days": 10
+    },
+    {
+      "staff_id": 15,
+      "off_days": 10
+    },
+    {
+      "staff_id": 16,
+      "off_days": 10
+    },
+    {
+      "staff_id": 17,
+      "off_days": 10
+    },
+    {
+      "staff_id": 18,
+      "off_days": 10
+    },
+    {
+      "staff_id": 19,
+      "off_days": 10
+    },
+    {
+      "staff_id": 20,
+      "off_days": 10
+    },
+    {
+      "staff_id": 21,
+      "off_days": 10
+    },
+    {
+      "staff_id": 22,
+      "off_days": 10
+    },
+    {
+      "staff_id": 23,
+      "off_days": 10
+    },
+    {
+      "staff_id": 24,
+      "off_days": 10
+    },
+    {
+      "staff_id": 25,
+      "off_days": 10
+    },
+    {
+      "staff_id": 26,
+      "off_days": 10
+    },
+    {
+      "staff_id": 27,
+      "off_days": 10
+    },
+    {
+      "staff_id": 28,
+      "off_days": 10
+    },
+    {
+      "staff_id": 29,
+      "off_days": 10
+    },
+    {
+      "staff_id": 30,
+      "off_days": 10
+    },
+    {
+      "staff_id": 31,
+      "off_days": 10
+    },
+    {
+      "staff_id": 32,
+      "off_days": 10
+    },
+    {
+      "staff_id": 33,
+      "off_days": 10
+    },
+    {
+      "staff_id": 34,
+      "off_days": 10
+    },
+    {
+      "staff_id": 35,
+      "off_days": 10
+    },
+    {
+      "staff_id": 36,
+      "off_days": 10
+    },
+    {
+      "staff_id": 37,
+      "off_days": 10
+    },
+    {
+      "staff_id": 38,
+      "off_days": 10
+    },
+    {
+      "staff_id": 39,
+      "off_days": 10
+    },
+    {
+      "staff_id": 40,
+      "off_days": 10
+    }
+  ],
+  "configured_off_days": [
+    {
+      "staff_id": 1,
+      "off_days": 10
+    },
+    {
+      "staff_id": 2,
+      "off_days": 10
+    },
+    {
+      "staff_id": 3,
+      "off_days": 10
+    },
+    {
+      "staff_id": 4,
+      "off_days": 10
+    },
+    {
+      "staff_id": 5,
+      "off_days": 10
+    },
+    {
+      "staff_id": 6,
+      "off_days": 10
+    },
+    {
+      "staff_id": 7,
+      "off_days": 10
+    },
+    {
+      "staff_id": 8,
+      "off_days": 10
+    },
+    {
+      "staff_id": 9,
+      "off_days": 10
+    },
+    {
+      "staff_id": 10,
+      "off_days": 10
+    },
+    {
+      "staff_id": 11,
+      "off_days": 10
+    },
+    {
+      "staff_id": 12,
+      "off_days": 10
+    },
+    {
+      "staff_id": 13,
+      "off_days": 10
+    },
+    {
+      "staff_id": 14,
+      "off_days": 10
+    },
+    {
+      "staff_id": 15,
+      "off_days": 10
+    },
+    {
+      "staff_id": 16,
+      "off_days": 10
+    },
+    {
+      "staff_id": 17,
+      "off_days": 10
+    },
+    {
+      "staff_id": 18,
+      "off_days": 10
+    },
+    {
+      "staff_id": 19,
+      "off_days": 10
+    },
+    {
+      "staff_id": 20,
+      "off_days": 10
+    },
+    {
+      "staff_id": 21,
+      "off_days": 10
+    },
+    {
+      "staff_id": 22,
+      "off_days": 10
+    },
+    {
+      "staff_id": 23,
+      "off_days": 10
+    },
+    {
+      "staff_id": 24,
+      "off_days": 10
+    },
+    {
+      "staff_id": 25,
+      "off_days": 10
+    },
+    {
+      "staff_id": 26,
+      "off_days": 10
+    },
+    {
+      "staff_id": 27,
+      "off_days": 10
+    },
+    {
+      "staff_id": 28,
+      "off_days": 10
+    },
+    {
+      "staff_id": 29,
+      "off_days": 10
+    },
+    {
+      "staff_id": 30,
+      "off_days": 10
+    },
+    {
+      "staff_id": 31,
+      "off_days": 10
+    },
+    {
+      "staff_id": 32,
+      "off_days": 10
+    },
+    {
+      "staff_id": 33,
+      "off_days": 10
+    },
+    {
+      "staff_id": 34,
+      "off_days": 10
+    },
+    {
+      "staff_id": 35,
+      "off_days": 10
+    },
+    {
+      "staff_id": 36,
+      "off_days": 10
+    },
+    {
+      "staff_id": 37,
+      "off_days": 10
+    },
+    {
+      "staff_id": 38,
+      "off_days": 10
+    },
+    {
+      "staff_id": 39,
+      "off_days": 10
+    },
+    {
+      "staff_id": 40,
+      "off_days": 10
+    }
+  ],
+  "user_override_assignment_keys": []
+}

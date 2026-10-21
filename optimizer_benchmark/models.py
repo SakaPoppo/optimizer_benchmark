@@ -20,6 +20,15 @@ class BenchmarkCase:
 
 
 @dataclass(frozen=True)
+class BenchmarkDataset:
+    generation: str
+    manifest_path: Path
+    manifest_hash: str
+    dataset_hash: str
+    cases: tuple[BenchmarkCase, ...]
+
+
+@dataclass(frozen=True)
 class ApiCallResult:
     status: str
     elapsed_seconds: float
