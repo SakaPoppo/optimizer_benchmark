@@ -90,10 +90,35 @@ CREATE TABLE IF NOT EXISTS benchmark_trials (
     phase_results_json TEXT NOT NULL,
     issues_json TEXT NOT NULL,
     internal_elapsed_seconds REAL,
+    context_build_seconds REAL,
+    model_build_seconds REAL,
+    result_build_seconds REAL,
+    cpu_time_seconds REAL,
     cpu_percent REAL,
     peak_memory_mb REAL,
+    logical_cpu_count INTEGER,
+    cpu_limit REAL,
+    ortools_version TEXT,
+    optimizer_worker_count INTEGER,
+    solver_seed INTEGER,
     created_at TEXT NOT NULL,
     UNIQUE(run_id, trial_number)
+);
+
+CREATE TABLE IF NOT EXISTS phase_metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trial_id INTEGER NOT NULL REFERENCES benchmark_trials(id),
+    phase_name TEXT NOT NULL,
+    status TEXT NOT NULL,
+    objective_value REAL,
+    optimal INTEGER NOT NULL,
+    time_limit_seconds REAL,
+    wall_time_seconds REAL,
+    best_objective_bound REAL,
+    branches INTEGER,
+    conflicts INTEGER,
+    solution_found INTEGER NOT NULL,
+    UNIQUE(trial_id, phase_name)
 );
 
 CREATE TABLE IF NOT EXISTS quality_metrics (
@@ -104,7 +129,16 @@ CREATE TABLE IF NOT EXISTS quality_metrics (
     night_counts_json TEXT NOT NULL,
     maximum_consecutive_work_days INTEGER NOT NULL,
     hard_violation_count INTEGER NOT NULL,
-    violations_json TEXT NOT NULL
+    violations_json TEXT NOT NULL,
+    day_ability_totals_json TEXT NOT NULL DEFAULT '{}',
+    night_ability_totals_json TEXT NOT NULL DEFAULT '{}',
+    day_ability_deviations_json TEXT NOT NULL DEFAULT '{}',
+    night_ability_deviations_json TEXT NOT NULL DEFAULT '{}',
+    shift_counts_by_staff_json TEXT NOT NULL DEFAULT '{}',
+    consecutive_work_days_by_staff_json TEXT NOT NULL DEFAULT '{}',
+    night_count_standard_deviation REAL NOT NULL DEFAULT 0,
+    work_count_difference INTEGER NOT NULL DEFAULT 0,
+    off_count_difference INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS benchmark_runs_version_idx
@@ -112,6 +146,9 @@ ON benchmark_runs(version_id, started_at);
 
 CREATE INDEX IF NOT EXISTS benchmark_trials_run_idx
 ON benchmark_trials(run_id, trial_number);
+
+CREATE INDEX IF NOT EXISTS phase_metrics_trial_idx
+ON phase_metrics(trial_id, phase_name);
 
 """
 
@@ -142,21 +179,70 @@ class BenchmarkStorage:
 
     @staticmethod
     def _migrate(connection: sqlite3.Connection) -> None:
-        columns = {
+        run_columns = {
             row["name"]
             for row in connection.execute("PRAGMA table_info(benchmark_runs)")
         }
-        if "suite_id" not in columns:
+        if "suite_id" not in run_columns:
             connection.execute("ALTER TABLE benchmark_runs ADD COLUMN suite_id INTEGER")
-        if "planned_trials" not in columns:
+        if "planned_trials" not in run_columns:
             connection.execute(
                 "ALTER TABLE benchmark_runs "
                 "ADD COLUMN planned_trials INTEGER NOT NULL DEFAULT 1"
             )
+        BenchmarkStorage._add_missing_columns(
+            connection,
+            "benchmark_trials",
+            {
+                "context_build_seconds": "REAL",
+                "model_build_seconds": "REAL",
+                "result_build_seconds": "REAL",
+                "cpu_time_seconds": "REAL",
+                "logical_cpu_count": "INTEGER",
+                "cpu_limit": "REAL",
+                "ortools_version": "TEXT",
+                "optimizer_worker_count": "INTEGER",
+                "solver_seed": "INTEGER",
+            },
+        )
+        BenchmarkStorage._add_missing_columns(
+            connection,
+            "quality_metrics",
+            {
+                "day_ability_totals_json": "TEXT NOT NULL DEFAULT '{}'",
+                "night_ability_totals_json": "TEXT NOT NULL DEFAULT '{}'",
+                "day_ability_deviations_json": "TEXT NOT NULL DEFAULT '{}'",
+                "night_ability_deviations_json": "TEXT NOT NULL DEFAULT '{}'",
+                "shift_counts_by_staff_json": "TEXT NOT NULL DEFAULT '{}'",
+                "consecutive_work_days_by_staff_json": (
+                    "TEXT NOT NULL DEFAULT '{}'"
+                ),
+                "night_count_standard_deviation": "REAL NOT NULL DEFAULT 0",
+                "work_count_difference": "INTEGER NOT NULL DEFAULT 0",
+                "off_count_difference": "INTEGER NOT NULL DEFAULT 0",
+            },
+        )
         connection.execute(
             "CREATE INDEX IF NOT EXISTS benchmark_runs_suite_idx "
             "ON benchmark_runs(suite_id, id)"
         )
+
+    @staticmethod
+    def _add_missing_columns(
+        connection: sqlite3.Connection,
+        table_name: str,
+        definitions: dict[str, str],
+    ) -> None:
+        columns = {
+            row["name"]
+            for row in connection.execute(f"PRAGMA table_info({table_name})")
+        }
+        for column_name, definition in definitions.items():
+            if column_name not in columns:
+                connection.execute(
+                    f"ALTER TABLE {table_name} "
+                    f"ADD COLUMN {column_name} {definition}"
+                )
 
     @contextmanager
     def _connect(self):
@@ -348,6 +434,7 @@ class BenchmarkStorage:
         trial_number: int = 1,
     ) -> int:
         response = result.response_body or {}
+        metrics = response.get("metrics") or {}
         with self._connect() as connection:
             cursor = connection.execute(
                 """
@@ -355,27 +442,78 @@ class BenchmarkStorage:
                     run_id, trial_number, status, http_status, elapsed_seconds,
                     response_status, solver_status, error_type, error_message,
                     input_path, response_path, phase_results_json, issues_json,
-                    internal_elapsed_seconds, cpu_percent, peak_memory_mb, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?)
+                    internal_elapsed_seconds, context_build_seconds,
+                    model_build_seconds, result_build_seconds, cpu_time_seconds,
+                    cpu_percent, peak_memory_mb, logical_cpu_count, cpu_limit,
+                    ortools_version, optimizer_worker_count, solver_seed, created_at
+                ) VALUES (
+                    :run_id, :trial_number, :status, :http_status, :elapsed_seconds,
+                    :response_status, :solver_status, :error_type, :error_message,
+                    :input_path, :response_path, :phase_results_json, :issues_json,
+                    :internal_elapsed_seconds, :context_build_seconds,
+                    :model_build_seconds, :result_build_seconds, :cpu_time_seconds,
+                    :cpu_percent, :peak_memory_mb, :logical_cpu_count, :cpu_limit,
+                    :ortools_version, :optimizer_worker_count, :solver_seed, :created_at
+                )
                 """,
-                (
-                    run_id,
-                    trial_number,
-                    result.status,
-                    result.http_status,
-                    result.elapsed_seconds,
-                    response.get("status"),
-                    result.solver_status,
-                    result.error_type,
-                    result.error_message,
-                    str(input_path),
-                    str(response_path) if response_path else None,
-                    _json(response.get("phase_results", [])),
-                    _json(response.get("issues", [])),
-                    _now(),
-                ),
+                {
+                    "run_id": run_id,
+                    "trial_number": trial_number,
+                    "status": result.status,
+                    "http_status": result.http_status,
+                    "elapsed_seconds": result.elapsed_seconds,
+                    "response_status": response.get("status"),
+                    "solver_status": result.solver_status,
+                    "error_type": result.error_type,
+                    "error_message": result.error_message,
+                    "input_path": str(input_path),
+                    "response_path": str(response_path) if response_path else None,
+                    "phase_results_json": _json(response.get("phase_results", [])),
+                    "issues_json": _json(response.get("issues", [])),
+                    "internal_elapsed_seconds": metrics.get(
+                        "internal_elapsed_seconds"
+                    ),
+                    "context_build_seconds": metrics.get("context_build_seconds"),
+                    "model_build_seconds": metrics.get("model_build_seconds"),
+                    "result_build_seconds": metrics.get("result_build_seconds"),
+                    "cpu_time_seconds": metrics.get("cpu_time_seconds"),
+                    "cpu_percent": metrics.get("cpu_percent"),
+                    "peak_memory_mb": metrics.get("peak_memory_mb"),
+                    "logical_cpu_count": metrics.get("logical_cpu_count"),
+                    "cpu_limit": metrics.get("cpu_limit"),
+                    "ortools_version": metrics.get("ortools_version"),
+                    "optimizer_worker_count": metrics.get("num_search_workers"),
+                    "solver_seed": metrics.get("solver_seed"),
+                    "created_at": _now(),
+                },
             )
-            return int(cursor.lastrowid)
+            trial_id = int(cursor.lastrowid)
+            connection.executemany(
+                """
+                INSERT INTO phase_metrics(
+                    trial_id, phase_name, status, objective_value, optimal,
+                    time_limit_seconds, wall_time_seconds, best_objective_bound,
+                    branches, conflicts, solution_found
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        trial_id,
+                        phase["name"],
+                        phase["status"],
+                        phase.get("objective_value"),
+                        int(bool(phase.get("optimal"))),
+                        phase.get("time_limit_seconds"),
+                        phase.get("wall_time_seconds"),
+                        phase.get("best_objective_bound"),
+                        phase.get("branches"),
+                        phase.get("conflicts"),
+                        int(bool(phase.get("solution_found"))),
+                    )
+                    for phase in response.get("phase_results", [])
+                ],
+            )
+            return trial_id
 
     def get_suite(self, suite_id: int) -> dict:
         with self._connect() as connection:
@@ -455,7 +593,17 @@ class BenchmarkStorage:
                        AVG(t.elapsed_seconds) AS average_elapsed_seconds,
                        MIN(t.elapsed_seconds) AS minimum_elapsed_seconds,
                        MAX(t.elapsed_seconds) AS maximum_elapsed_seconds,
-                       AVG(q.hard_violation_count) AS average_hard_violations
+                       AVG(t.internal_elapsed_seconds)
+                           AS average_internal_elapsed_seconds,
+                       AVG(t.cpu_percent) AS average_cpu_percent,
+                       MAX(t.peak_memory_mb) AS maximum_peak_memory_mb,
+                       AVG(q.hard_violation_count) AS average_hard_violations,
+                       AVG(q.night_count_standard_deviation)
+                           AS average_night_count_standard_deviation,
+                       AVG(q.work_count_difference)
+                           AS average_work_count_difference,
+                       AVG(q.off_count_difference)
+                           AS average_off_count_difference
                 FROM benchmark_runs r
                 JOIN benchmark_cases c ON c.case_id = r.case_id
                 LEFT JOIN benchmark_trials t ON t.run_id = r.id
@@ -476,6 +624,46 @@ class BenchmarkStorage:
                 """,
                 (suite_id,),
             ).fetchall()
+            phase_rows = connection.execute(
+                """
+                SELECT p.phase_name,
+                       COUNT(*) AS trial_count,
+                       AVG(p.wall_time_seconds) AS average_wall_time_seconds,
+                       MAX(p.wall_time_seconds) AS maximum_wall_time_seconds,
+                       AVG(p.time_limit_seconds) AS time_limit_seconds,
+                       SUM(CASE WHEN p.optimal = 1 THEN 1 ELSE 0 END)
+                           AS optimal_count,
+                       SUM(CASE WHEN p.solution_found = 1 THEN 1 ELSE 0 END)
+                           AS solution_count,
+                       AVG(p.branches) AS average_branches,
+                       AVG(p.conflicts) AS average_conflicts
+                FROM phase_metrics p
+                JOIN benchmark_trials t ON t.id = p.trial_id
+                JOIN benchmark_runs r ON r.id = t.run_id
+                WHERE r.suite_id = ?
+                GROUP BY p.phase_name
+                ORDER BY MIN(p.id)
+                """,
+                (suite_id,),
+            ).fetchall()
+            resource_row = connection.execute(
+                """
+                SELECT AVG(t.internal_elapsed_seconds)
+                           AS average_internal_elapsed_seconds,
+                       AVG(t.cpu_time_seconds) AS average_cpu_time_seconds,
+                       AVG(t.cpu_percent) AS average_cpu_percent,
+                       MAX(t.peak_memory_mb) AS maximum_peak_memory_mb,
+                       MAX(t.cpu_limit) AS cpu_limit,
+                       MAX(t.logical_cpu_count) AS logical_cpu_count,
+                       MAX(t.ortools_version) AS ortools_version,
+                       MAX(t.optimizer_worker_count) AS optimizer_worker_count,
+                       MAX(t.solver_seed) AS solver_seed
+                FROM benchmark_trials t
+                JOIN benchmark_runs r ON r.id = t.run_id
+                WHERE r.suite_id = ?
+                """,
+                (suite_id,),
+            ).fetchone()
         case_results = [dict(row) for row in rows]
         elapsed = [float(row["elapsed_seconds"]) for row in elapsed_rows]
         successful = sum(row["status"] == "success" for row in elapsed_rows)
@@ -490,6 +678,8 @@ class BenchmarkStorage:
             "average_elapsed_seconds": sum(elapsed) / completed if completed else None,
             "median_elapsed_seconds": _percentile(elapsed, 0.5),
             "p95_elapsed_seconds": _percentile(elapsed, 0.95),
+            "resource_metrics": dict(resource_row),
+            "phase_metrics": [dict(row) for row in phase_rows],
             "case_results": case_results,
         }
 
@@ -501,8 +691,13 @@ class BenchmarkStorage:
                     trial_id, evaluator_version, day_counts_json,
                     day_staffing_deltas_json, night_counts_json,
                     maximum_consecutive_work_days, hard_violation_count,
-                    violations_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    violations_json, day_ability_totals_json,
+                    night_ability_totals_json, day_ability_deviations_json,
+                    night_ability_deviations_json, shift_counts_by_staff_json,
+                    consecutive_work_days_by_staff_json,
+                    night_count_standard_deviation, work_count_difference,
+                    off_count_difference
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     trial_id,
@@ -513,6 +708,15 @@ class BenchmarkStorage:
                     quality.maximum_consecutive_work_days,
                     quality.hard_violation_count,
                     _json(quality.violations),
+                    _json(quality.day_ability_totals),
+                    _json(quality.night_ability_totals),
+                    _json(quality.day_ability_deviation_percentages),
+                    _json(quality.night_ability_deviation_percentages),
+                    _json(quality.shift_counts_by_staff),
+                    _json(quality.consecutive_work_days_by_staff),
+                    quality.night_count_standard_deviation,
+                    quality.work_count_difference,
+                    quality.off_count_difference,
                 ),
             )
 
@@ -546,11 +750,22 @@ class BenchmarkStorage:
                     t.solver_status, t.error_type, t.error_message,
                     t.input_path, t.response_path, t.phase_results_json,
                     t.issues_json, t.internal_elapsed_seconds,
-                    t.cpu_percent, t.peak_memory_mb,
+                    t.context_build_seconds, t.model_build_seconds,
+                    t.result_build_seconds, t.cpu_time_seconds,
+                    t.cpu_percent, t.peak_memory_mb, t.logical_cpu_count,
+                    t.cpu_limit, t.ortools_version,
+                    t.optimizer_worker_count, t.solver_seed,
                     q.evaluator_version, q.day_counts_json,
                     q.day_staffing_deltas_json, q.night_counts_json,
                     q.maximum_consecutive_work_days,
-                    q.hard_violation_count, q.violations_json
+                    q.hard_violation_count, q.violations_json,
+                    q.day_ability_totals_json, q.night_ability_totals_json,
+                    q.day_ability_deviations_json,
+                    q.night_ability_deviations_json,
+                    q.shift_counts_by_staff_json,
+                    q.consecutive_work_days_by_staff_json,
+                    q.night_count_standard_deviation,
+                    q.work_count_difference, q.off_count_difference
                 FROM benchmark_runs r
                 JOIN api_versions v ON v.id = r.version_id
                 JOIN benchmark_cases c ON c.case_id = r.case_id
@@ -571,6 +786,12 @@ class BenchmarkStorage:
             "day_staffing_deltas_json",
             "night_counts_json",
             "violations_json",
+            "day_ability_totals_json",
+            "night_ability_totals_json",
+            "day_ability_deviations_json",
+            "night_ability_deviations_json",
+            "shift_counts_by_staff_json",
+            "consecutive_work_days_by_staff_json",
         ):
             raw_value = report.pop(key)
             report[key.removesuffix("_json")] = (

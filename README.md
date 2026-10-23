@@ -1,23 +1,24 @@
 # Optimizer Benchmark
 
-Ns Shiftのoptimizer APIを、固定入力で実行して応答時間と基本品質を保存・表示する開発者向けツールです。Phase 2では10・20・30・40人×4パターンの固定16ケースを、Quick / Standard / Fullの3モードで実行できます。
+Ns Shiftのoptimizer APIを、固定入力で実行して処理性能と生成品質を保存・表示する開発者向けツールです。10・20・30・40人×4パターンの固定16ケースを、Quick / Standard / Fullの3モードで実行できます。
 
 ## 構成
 
 - `httpx`による認証付き`POST /generate`
 - Runner側での外部応答時間計測
-- APIの`issues`から独立した基本品質評価
+- API内部時間、フェーズ別時間・探索統計、CPU・メモリ・実行設定の記録
+- APIの`issues`から独立した制約・能力・連勤・公平性評価
 - SQLiteへのバージョン・実行・試行・品質メトリクス保存
 - JSONファイルへの入力・API応答原本の保存
 - CLI実行とStreamlitレポート
 - seed・入力ハッシュ付きの固定16ケース
 - Quick 16回 / Standard 48回 / Full 160回の逐次実行
 - 1試行ごとの保存、中断後の未実行分からの再開
-- 実行状態・成功率・平均・中央値・p95・ケース別の基本集計
+- 実行状態・成功率・平均・中央値・p95・ケース別・フェーズ別の集計
 
 固定ケースは`data/cases/demo_20_baseline_v1.json`です。Ns Shift Trialの実コードから2026年11月分を生成して固定しています。対象年月は仕様上未決定のため、Phase 1の暫定値です。
 
-API内部のフェーズ時間、CPU、メモリ、OR-Toolsバージョン、worker数、solver seedはPhase 1では取得せず「未計測」と表示します。
+Phase 3対応APIでは、内部時間、CPU、ピークメモリ、OR-Toolsバージョン、worker数、solver seedを取得します。旧APIの保存結果や計測値がない応答は「未計測」と表示します。
 
 ## セットアップ
 
@@ -51,7 +52,7 @@ source .env
 set +a
 python -m optimizer_benchmark.cli run-suite \
   --version-name local-current \
-  --change-summary "Phase 2 benchmark" \
+  --change-summary "Phase 3 benchmark" \
   --mode quick
 ```
 

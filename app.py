@@ -58,6 +58,20 @@ def render_report(report: dict) -> None:
             "独立評価の違反",
             report.get("hard_violation_count", "未計測"),
         )
+        fairness_columns = st.columns(3)
+        night_stddev = report.get("night_count_standard_deviation")
+        fairness_columns[0].metric(
+            "夜勤回数の標準偏差",
+            f"{night_stddev:.3f}" if night_stddev is not None else "未計測",
+        )
+        fairness_columns[1].metric(
+            "勤務日数の最大差",
+            report.get("work_count_difference", "未計測"),
+        )
+        fairness_columns[2].metric(
+            "休日数の最大差",
+            report.get("off_count_difference", "未計測"),
+        )
         st.write(f"評価器バージョン: `{report['evaluator_version']}`")
         st.dataframe(
             [
@@ -73,6 +87,31 @@ def render_report(report: dict) -> None:
         )
         with st.expander("スタッフ別夜勤回数"):
             st.json(night_counts)
+        with st.expander("日別能力合計と期待値からの偏差"):
+            st.dataframe(
+                [
+                    {
+                        "日付": target_date,
+                        "日勤能力合計": total,
+                        "日勤偏差%": (
+                            report.get("day_ability_deviations", {}).get(target_date)
+                        ),
+                        "夜勤能力合計": (
+                            report.get("night_ability_totals", {}).get(target_date)
+                        ),
+                        "夜勤偏差%": (
+                            report.get("night_ability_deviations", {}).get(target_date)
+                        ),
+                    }
+                    for target_date, total in (
+                        report.get("day_ability_totals") or {}
+                    ).items()
+                ],
+                width="stretch",
+                hide_index=True,
+            )
+        with st.expander("スタッフ別勤務回数"):
+            st.json(report.get("shift_counts_by_staff") or {})
         with st.expander("独立評価の制約違反"):
             st.json(report.get("violations") or [])
     else:
@@ -87,17 +126,39 @@ def render_report(report: dict) -> None:
     with st.expander("API issues"):
         st.json(report.get("issues") or [])
 
-    st.markdown("#### Phase 1では未計測")
-    st.dataframe(
-        [
-            {"項目": "API内部処理時間・フェーズ別時間", "値": "未計測"},
-            {"項目": "CPU使用率", "値": "未計測"},
-            {"項目": "ピークメモリ", "値": "未計測"},
-            {"項目": "OR-Toolsバージョン・worker数・solver seed", "値": "未計測"},
-        ],
-        width="stretch",
-        hide_index=True,
-    )
+    st.markdown("#### API内部計測")
+    if report.get("internal_elapsed_seconds") is None:
+        st.info("この履歴はPhase 3計測導入前のため未計測です。")
+    else:
+        resource_columns = st.columns(4)
+        resource_columns[0].metric(
+            "API内部時間", f"{report['internal_elapsed_seconds']:.3f}秒"
+        )
+        resource_columns[1].metric(
+            "CPU時間", f"{report['cpu_time_seconds']:.3f}秒"
+        )
+        resource_columns[2].metric(
+            "CPU使用率", f"{report['cpu_percent']:.1f}%"
+        )
+        resource_columns[3].metric(
+            "ピークメモリ", f"{report['peak_memory_mb']:.1f} MB"
+        )
+        st.dataframe(
+            [
+                {"項目": "コンテキスト構築", "秒": report["context_build_seconds"]},
+                {"項目": "モデル構築", "秒": report["model_build_seconds"]},
+                {"項目": "結果変換", "秒": report["result_build_seconds"]},
+            ],
+            width="stretch",
+            hide_index=True,
+        )
+        st.caption(
+            f"CPU上限={report.get('cpu_limit') or '未計測'} / "
+            f"logical CPU={report.get('logical_cpu_count') or '未計測'} / "
+            f"workers={report.get('optimizer_worker_count') or '未計測'} / "
+            f"seed={report.get('solver_seed') if report.get('solver_seed') is not None else '未計測'} / "
+            f"OR-Tools={report.get('ortools_version') or '未計測'}"
+        )
     st.caption(
         f"入力原本: {report.get('input_path')} / 応答原本: "
         f"{report.get('response_path') or '未取得'}"
@@ -139,6 +200,44 @@ def render_suite_report(report: dict) -> None:
         f"{p95:.3f}秒" if p95 is not None else "未計測",
     )
 
+    resources = report.get("resource_metrics") or {}
+    if resources.get("average_internal_elapsed_seconds") is not None:
+        st.markdown("#### API内部リソース")
+        resource_columns = st.columns(4)
+        resource_columns[0].metric(
+            "平均API内部時間",
+            f"{resources['average_internal_elapsed_seconds']:.3f}秒",
+        )
+        resource_columns[1].metric(
+            "平均CPU時間",
+            f"{resources['average_cpu_time_seconds']:.3f}秒",
+        )
+        resource_columns[2].metric(
+            "平均CPU使用率",
+            f"{resources['average_cpu_percent']:.1f}%",
+        )
+        resource_columns[3].metric(
+            "最大ピークメモリ",
+            f"{resources['maximum_peak_memory_mb']:.1f} MB",
+        )
+        st.caption(
+            f"CPU上限={resources.get('cpu_limit') or '未計測'} / "
+            f"logical CPU={resources.get('logical_cpu_count') or '未計測'} / "
+            f"workers={resources.get('optimizer_worker_count') or '未計測'} / "
+            f"seed={resources.get('solver_seed') if resources.get('solver_seed') is not None else '未計測'} / "
+            f"OR-Tools={resources.get('ortools_version') or '未計測'}"
+        )
+
+    phase_metrics = report.get("phase_metrics") or []
+    if phase_metrics:
+        st.markdown("#### フェーズ別ボトルネック")
+        st.bar_chart(
+            phase_metrics,
+            x="phase_name",
+            y="average_wall_time_seconds",
+        )
+        st.dataframe(phase_metrics, width="stretch", hide_index=True)
+
     case_results = report.get("case_results") or []
     if case_results:
         st.markdown("#### ケース別応答時間")
@@ -165,7 +264,15 @@ def render_suite_report(report: dict) -> None:
                     "完了": f"{row['completed_trials']}/{row['planned_trials']}",
                     "成功": row["successful_trials"] or 0,
                     "平均秒": row["average_elapsed_seconds"],
+                    "API内部秒": row["average_internal_elapsed_seconds"],
+                    "CPU%": row["average_cpu_percent"],
+                    "ピークMB": row["maximum_peak_memory_mb"],
                     "平均制約違反": row["average_hard_violations"],
+                    "夜勤標準偏差": (
+                        row["average_night_count_standard_deviation"]
+                    ),
+                    "勤務日数差": row["average_work_count_difference"],
+                    "休日数差": row["average_off_count_difference"],
                 }
                 for row in case_results
             ],
@@ -178,9 +285,9 @@ settings = Settings.from_env()
 storage = get_storage(str(settings.database_path))
 
 st.title("Optimizer Benchmark")
-st.caption("Phase 2: 固定16ケースのQuick / Standard / Full測定")
+st.caption("Phase 3: 固定16ケースの性能・リソース・品質測定")
 
-suite_tab, legacy_tab = st.tabs(["Phase 2 一括測定", "Phase 1 単体測定"])
+suite_tab, legacy_tab = st.tabs(["一括測定", "単体測定"])
 
 with suite_tab:
     mode_labels = {
@@ -207,7 +314,7 @@ with suite_tab:
         )
         suite_change_summary = st.text_area(
             "変更概要",
-            value="Phase 2 benchmark",
+            value="Phase 3 benchmark",
             key="suite-change-summary",
         )
         suite_mode = st.selectbox(
@@ -347,7 +454,7 @@ with legacy_tab:
         )
         change_summary = st.text_area(
             "変更概要",
-            value="Phase 1 benchmark",
+            value="Phase 3 benchmark",
             key="legacy-change-summary",
         )
         submitted = st.form_submit_button("1回実行")
