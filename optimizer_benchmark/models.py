@@ -58,3 +58,12 @@ class QualityEvaluation:
     maximum_consecutive_work_days: int
     hard_violation_count: int
     violations: list[dict]
+    day_ability_totals: dict[str, int]
+    night_ability_totals: dict[str, int]
+    day_ability_deviation_percentages: dict[str, float]
+    night_ability_deviation_percentages: dict[str, float]
+    shift_counts_by_staff: dict[int, dict[str, int]]
+    consecutive_work_days_by_staff: dict[int, int]
+    night_count_standard_deviation: float
+    work_count_difference: int
+    off_count_difference: int

@@ -55,8 +55,17 @@ def test_runner_persists_trial_quality_and_artifacts(tmp_path) -> None:
     )
 
     assert report["trial_status"] == "success"
-    assert report["evaluator_version"] == "phase1-v1"
+    assert report["evaluator_version"] == "phase3-v1"
     assert report["hard_violation_count"] > 0
+    assert report["internal_elapsed_seconds"] == 0.4
+    assert report["cpu_time_seconds"] == 0.6
+    assert report["cpu_percent"] == 150.0
+    assert report["peak_memory_mb"] == 128.0
+    assert report["cpu_limit"] == 2.0
+    assert report["optimizer_worker_count"] == 2
+    assert report["ortools_version"] == "9.14.0"
+    assert report["night_count_standard_deviation"] == 0
+    assert report["phase_results"][0]["wall_time_seconds"] == 0.2
     assert Path(report["input_path"]).exists()
     assert Path(report["response_path"]).exists()
     assert BenchmarkStorage(tmp_path / "benchmark.db").list_runs()[0]["id"] == 1
