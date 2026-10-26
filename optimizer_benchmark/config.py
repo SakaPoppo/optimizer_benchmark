@@ -11,6 +11,7 @@ DEFAULT_CASE_PATH = PROJECT_ROOT / "data" / "cases" / "demo_20_baseline_v1.json"
 DEFAULT_DATASET_MANIFEST_PATH = (
     PROJECT_ROOT / "data" / "datasets" / "phase2-v1" / "manifest.json"
 )
+DEFAULT_OPTIMIZER_SOURCE_DIRECTORY = PROJECT_ROOT.parent / "ns-shift-optimizer-api"
 
 
 def _resolve_path(value: str, default: Path) -> Path:
@@ -27,6 +28,7 @@ class Settings:
     artifacts_directory: Path
     case_path: Path = DEFAULT_CASE_PATH
     dataset_manifest_path: Path = DEFAULT_DATASET_MANIFEST_PATH
+    optimizer_source_directory: Path = DEFAULT_OPTIMIZER_SOURCE_DIRECTORY
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -47,5 +49,9 @@ class Settings:
             dataset_manifest_path=_resolve_path(
                 os.getenv("BENCHMARK_DATASET_MANIFEST", ""),
                 DEFAULT_DATASET_MANIFEST_PATH,
+            ),
+            optimizer_source_directory=_resolve_path(
+                os.getenv("OPTIMIZER_SOURCE_DIR", ""),
+                DEFAULT_OPTIMIZER_SOURCE_DIRECTORY,
             ),
         )
