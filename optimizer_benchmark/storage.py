@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS api_versions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     change_summary TEXT NOT NULL,
+    git_sha TEXT,
+    git_dirty INTEGER,
+    git_source_path TEXT,
     created_at TEXT NOT NULL
 );
 
@@ -169,6 +172,100 @@ def _percentile(values: list[float], percentile: float) -> float | None:
     return ordered[index]
 
 
+def _comparison_value(
+    baseline: float | int | None,
+    target: float | int | None,
+    *,
+    include_percent: bool = False,
+) -> dict:
+    delta = None
+    percent_change = None
+    if baseline is not None and target is not None:
+        delta = target - baseline
+        if include_percent and baseline != 0:
+            percent_change = delta / baseline * 100
+    return {
+        "baseline": baseline,
+        "target": target,
+        "delta": delta,
+        "percent_change": percent_change,
+    }
+
+
+def _suite_comparison_header(report: dict) -> dict:
+    return {
+        "id": report["id"],
+        "version_name": report["version_name"],
+        "change_summary": report["change_summary"],
+        "git_sha": report.get("git_sha"),
+        "git_dirty": report.get("git_dirty"),
+        "dataset_generation": report["dataset_generation"],
+        "dataset_hash": report["dataset_hash"],
+        "mode": report["mode"],
+        "trials_per_case": report["trials_per_case"],
+        "completed_trials": report["completed_trials"],
+        "total_trials": report["total_trials"],
+    }
+
+
+def _compare_case_results(
+    baseline: dict,
+    target: dict,
+    *,
+    quality_comparable: bool,
+) -> dict:
+    baseline_completed = int(baseline["completed_trials"])
+    target_completed = int(target["completed_trials"])
+    baseline_success_rate = (
+        int(baseline["successful_trials"] or 0) / baseline_completed
+        if baseline_completed
+        else None
+    )
+    target_success_rate = (
+        int(target["successful_trials"] or 0) / target_completed
+        if target_completed
+        else None
+    )
+    elapsed = _comparison_value(
+        baseline.get("average_elapsed_seconds"),
+        target.get("average_elapsed_seconds"),
+        include_percent=True,
+    )
+    success = _comparison_value(baseline_success_rate, target_success_rate)
+    result = {
+        "case_id": baseline["case_id"],
+        "case_name": baseline["case_name"],
+        "staff_count": baseline["staff_count"],
+        "pattern": baseline["pattern"],
+        "baseline_completed_trials": baseline_completed,
+        "target_completed_trials": target_completed,
+        "baseline_success_rate": success["baseline"],
+        "target_success_rate": success["target"],
+        "success_rate_delta": success["delta"],
+        "baseline_average_elapsed_seconds": elapsed["baseline"],
+        "target_average_elapsed_seconds": elapsed["target"],
+        "elapsed_seconds_delta": elapsed["delta"],
+        "elapsed_percent_change": elapsed["percent_change"],
+    }
+    quality_fields = (
+        "average_hard_violations",
+        "average_maximum_consecutive_work_days",
+        "average_night_count_standard_deviation",
+        "average_work_count_difference",
+        "average_off_count_difference",
+    )
+    for key in quality_fields:
+        values = (
+            _comparison_value(baseline.get(key), target.get(key))
+            if quality_comparable
+            else {"baseline": None, "target": None, "delta": None}
+        )
+        result[f"baseline_{key}"] = values["baseline"]
+        result[f"target_{key}"] = values["target"]
+        result[f"{key}_delta"] = values["delta"]
+    return result
+
+
 class BenchmarkStorage:
     def __init__(self, database_path: Path) -> None:
         self.database_path = database_path
@@ -179,6 +276,15 @@ class BenchmarkStorage:
 
     @staticmethod
     def _migrate(connection: sqlite3.Connection) -> None:
+        BenchmarkStorage._add_missing_columns(
+            connection,
+            "api_versions",
+            {
+                "git_sha": "TEXT",
+                "git_dirty": "INTEGER",
+                "git_source_path": "TEXT",
+            },
+        )
         run_columns = {
             row["name"]
             for row in connection.execute("PRAGMA table_info(benchmark_runs)")
@@ -255,10 +361,22 @@ class BenchmarkStorage:
         finally:
             connection.close()
 
-    def get_or_create_version(self, name: str, change_summary: str) -> int:
+    def get_or_create_version(
+        self,
+        name: str,
+        change_summary: str,
+        *,
+        git_sha: str | None = None,
+        git_dirty: bool | None = None,
+        git_source_path: str | None = None,
+    ) -> int:
         with self._connect() as connection:
             existing = connection.execute(
-                "SELECT id, change_summary FROM api_versions WHERE name = ?",
+                """
+                SELECT id, change_summary, git_sha, git_dirty, git_source_path
+                FROM api_versions
+                WHERE name = ?
+                """,
                 (name,),
             ).fetchone()
             if existing:
@@ -266,13 +384,36 @@ class BenchmarkStorage:
                     raise ValueError(
                         "同じバージョン名に異なる変更概要は登録できません。"
                     )
+                existing_dirty = (
+                    bool(existing["git_dirty"])
+                    if existing["git_dirty"] is not None
+                    else None
+                )
+                metadata_pairs = (
+                    ("Git SHA", existing["git_sha"], git_sha),
+                    ("dirty状態", existing_dirty, git_dirty),
+                )
+                for label, saved, current in metadata_pairs:
+                    if saved != current:
+                        raise ValueError(
+                            f"同じバージョン名に異なる{label}は登録できません。"
+                        )
                 return int(existing["id"])
             cursor = connection.execute(
                 """
-                INSERT INTO api_versions(name, change_summary, created_at)
-                VALUES (?, ?, ?)
+                INSERT INTO api_versions(
+                    name, change_summary, git_sha, git_dirty,
+                    git_source_path, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (name, change_summary, _now()),
+                (
+                    name,
+                    change_summary,
+                    git_sha,
+                    int(git_dirty) if git_dirty is not None else None,
+                    git_source_path,
+                    _now(),
+                ),
             )
             return int(cursor.lastrowid)
 
@@ -520,6 +661,7 @@ class BenchmarkStorage:
             row = connection.execute(
                 """
                 SELECT s.*, v.name AS version_name, v.change_summary,
+                       v.git_sha, v.git_dirty, v.git_source_path,
                        d.manifest_path, d.manifest_hash, d.dataset_hash,
                        d.case_count
                 FROM benchmark_suites s
@@ -533,6 +675,9 @@ class BenchmarkStorage:
             raise KeyError(f"benchmark suite {suite_id} は存在しません。")
         value = dict(row)
         value["environment"] = json.loads(value.pop("environment_json"))
+        value["git_dirty"] = (
+            bool(value["git_dirty"]) if value["git_dirty"] is not None else None
+        )
         return value
 
     def get_suite_work_items(self, suite_id: int) -> list[dict]:
@@ -567,7 +712,7 @@ class BenchmarkStorage:
                 """
                 SELECT s.id, s.mode, s.status, s.started_at, s.completed_at,
                        s.dataset_generation, s.trials_per_case,
-                       v.name AS version_name,
+                       v.name AS version_name, v.git_sha, v.git_dirty,
                        COUNT(t.id) AS completed_trials,
                        COUNT(DISTINCT r.id) * s.trials_per_case AS total_trials
                 FROM benchmark_suites s
@@ -578,7 +723,14 @@ class BenchmarkStorage:
                 ORDER BY s.id DESC
                 """
             ).fetchall()
-        return [dict(row) for row in rows]
+        suites = [dict(row) for row in rows]
+        for suite in suites:
+            suite["git_dirty"] = (
+                bool(suite["git_dirty"])
+                if suite["git_dirty"] is not None
+                else None
+            )
+        return suites
 
     def get_suite_summary(self, suite_id: int) -> dict:
         suite = self.get_suite(suite_id)
@@ -586,7 +738,7 @@ class BenchmarkStorage:
             rows = connection.execute(
                 """
                 SELECT c.case_id, c.name AS case_name, c.staff_count, c.pattern,
-                       r.id AS run_id, r.planned_trials,
+                       r.id AS run_id, r.input_hash, r.planned_trials,
                        COUNT(t.id) AS completed_trials,
                        SUM(CASE WHEN t.status = 'success' THEN 1 ELSE 0 END)
                            AS successful_trials,
@@ -598,6 +750,8 @@ class BenchmarkStorage:
                        AVG(t.cpu_percent) AS average_cpu_percent,
                        MAX(t.peak_memory_mb) AS maximum_peak_memory_mb,
                        AVG(q.hard_violation_count) AS average_hard_violations,
+                       AVG(q.maximum_consecutive_work_days)
+                           AS average_maximum_consecutive_work_days,
                        AVG(q.night_count_standard_deviation)
                            AS average_night_count_standard_deviation,
                        AVG(q.work_count_difference)
@@ -664,6 +818,27 @@ class BenchmarkStorage:
                 """,
                 (suite_id,),
             ).fetchone()
+            trial_rows = connection.execute(
+                """
+                SELECT c.case_id, c.name AS case_name, c.staff_count, c.pattern,
+                       t.trial_number, t.status, t.http_status,
+                       t.elapsed_seconds, t.response_status, t.solver_status,
+                       t.error_type, t.error_message,
+                       t.internal_elapsed_seconds, t.cpu_percent,
+                       t.peak_memory_mb, t.ortools_version,
+                       t.optimizer_worker_count, t.solver_seed,
+                       q.evaluator_version, q.hard_violation_count,
+                       q.night_count_standard_deviation,
+                       q.work_count_difference, q.off_count_difference
+                FROM benchmark_trials t
+                JOIN benchmark_runs r ON r.id = t.run_id
+                JOIN benchmark_cases c ON c.case_id = r.case_id
+                LEFT JOIN quality_metrics q ON q.trial_id = t.id
+                WHERE r.suite_id = ?
+                ORDER BY c.staff_count, c.pattern, t.trial_number
+                """,
+                (suite_id,),
+            ).fetchall()
         case_results = [dict(row) for row in rows]
         elapsed = [float(row["elapsed_seconds"]) for row in elapsed_rows]
         successful = sum(row["status"] == "success" for row in elapsed_rows)
@@ -681,6 +856,264 @@ class BenchmarkStorage:
             "resource_metrics": dict(resource_row),
             "phase_metrics": [dict(row) for row in phase_rows],
             "case_results": case_results,
+            "trial_results": [dict(row) for row in trial_rows],
+        }
+
+    def list_versions(self) -> list[dict]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT v.id, v.name, v.change_summary, v.git_sha, v.git_dirty,
+                       v.git_source_path, v.created_at,
+                       (
+                           SELECT COUNT(*)
+                           FROM benchmark_suites s
+                           WHERE s.version_id = v.id
+                       ) AS suite_count,
+                       (
+                           SELECT COUNT(*)
+                           FROM benchmark_runs r
+                           WHERE r.version_id = v.id AND r.suite_id IS NULL
+                       ) AS standalone_run_count,
+                       (
+                           SELECT MAX(r.started_at)
+                           FROM benchmark_runs r
+                           WHERE r.version_id = v.id
+                       ) AS last_run_at
+                FROM api_versions v
+                ORDER BY v.id DESC
+                """
+            ).fetchall()
+        versions = [dict(row) for row in rows]
+        for version in versions:
+            version["git_dirty"] = (
+                bool(version["git_dirty"])
+                if version["git_dirty"] is not None
+                else None
+            )
+        return versions
+
+    def get_version_report(self, version_id: int) -> dict:
+        versions = {
+            int(version["id"]): version for version in self.list_versions()
+        }
+        if version_id not in versions:
+            raise KeyError(f"api version {version_id} は存在しません。")
+        version = versions[version_id]
+        with self._connect() as connection:
+            suite_rows = connection.execute(
+                """
+                SELECT id
+                FROM benchmark_suites
+                WHERE version_id = ?
+                ORDER BY id DESC
+                """,
+                (version_id,),
+            ).fetchall()
+            run_rows = connection.execute(
+                """
+                SELECT r.id, r.status, r.started_at, r.completed_at,
+                       c.case_id, c.name AS case_name
+                FROM benchmark_runs r
+                JOIN benchmark_cases c ON c.case_id = r.case_id
+                WHERE r.version_id = ? AND r.suite_id IS NULL
+                ORDER BY r.id DESC
+                """,
+                (version_id,),
+            ).fetchall()
+        return {
+            **version,
+            "suites": [
+                self.get_suite_summary(int(row["id"])) for row in suite_rows
+            ],
+            "standalone_runs": [dict(row) for row in run_rows],
+        }
+
+    def compare_suites(self, baseline_suite_id: int, target_suite_id: int) -> dict:
+        if baseline_suite_id == target_suite_id:
+            raise ValueError("比較元と比較対象には異なるSuiteを選択してください。")
+        baseline = self.get_suite_summary(baseline_suite_id)
+        target = self.get_suite_summary(target_suite_id)
+        warnings = []
+
+        dataset_matches = (
+            baseline["dataset_generation"] == target["dataset_generation"]
+            and baseline["dataset_hash"] == target["dataset_hash"]
+        )
+        if not dataset_matches:
+            warnings.append(
+                {
+                    "code": "dataset_mismatch",
+                    "severity": "error",
+                    "message": (
+                        "データセット世代またはハッシュが異なるため、"
+                        "ケース別差分は比較できません。"
+                    ),
+                }
+            )
+
+        comparison_fields = (
+            ("mode", "実行モード"),
+            ("trials_per_case", "ケース当たり試行数"),
+            ("api_url", "API URL"),
+        )
+        for key, label in comparison_fields:
+            if baseline.get(key) != target.get(key):
+                warnings.append(
+                    {
+                        "code": f"{key}_mismatch",
+                        "severity": "warning",
+                        "message": (
+                            f"{label}が異なります: "
+                            f"{baseline.get(key)} → {target.get(key)}"
+                        ),
+                    }
+                )
+
+        environment_keys = (
+            "python_version",
+            "platform",
+            "processor",
+            "cpu_count",
+        )
+        for key in environment_keys:
+            baseline_value = baseline["environment"].get(key)
+            target_value = target["environment"].get(key)
+            if baseline_value != target_value:
+                warnings.append(
+                    {
+                        "code": f"environment_{key}_mismatch",
+                        "severity": "warning",
+                        "message": (
+                            f"実行環境 {key} が異なります: "
+                            f"{baseline_value} → {target_value}"
+                        ),
+                    }
+                )
+
+        resource_keys = (
+            "cpu_limit",
+            "logical_cpu_count",
+            "ortools_version",
+            "optimizer_worker_count",
+            "solver_seed",
+        )
+        for key in resource_keys:
+            baseline_value = baseline["resource_metrics"].get(key)
+            target_value = target["resource_metrics"].get(key)
+            if baseline_value != target_value:
+                warnings.append(
+                    {
+                        "code": f"resource_{key}_mismatch",
+                        "severity": "warning",
+                        "message": (
+                            f"計測条件 {key} が異なります: "
+                            f"{baseline_value} → {target_value}"
+                        ),
+                    }
+                )
+
+        baseline_evaluators = {
+            row["evaluator_version"]
+            for row in baseline["trial_results"]
+            if row["evaluator_version"] is not None
+        }
+        target_evaluators = {
+            row["evaluator_version"]
+            for row in target["trial_results"]
+            if row["evaluator_version"] is not None
+        }
+        evaluator_matches = (
+            bool(baseline_evaluators)
+            and baseline_evaluators == target_evaluators
+        )
+        if not evaluator_matches:
+            warnings.append(
+                {
+                    "code": "evaluator_mismatch",
+                    "severity": "warning",
+                    "message": (
+                        "評価器バージョンが一致しないか未計測のため、"
+                        "品質指標の差分は表示しません。"
+                    ),
+                }
+            )
+
+        if baseline.get("git_dirty"):
+            warnings.append(
+                {
+                    "code": "baseline_git_dirty",
+                    "severity": "warning",
+                    "message": "比較元のローカルAPIソースに未コミット変更があります。",
+                }
+            )
+        if target.get("git_dirty"):
+            warnings.append(
+                {
+                    "code": "target_git_dirty",
+                    "severity": "warning",
+                    "message": "比較対象のローカルAPIソースに未コミット変更があります。",
+                }
+            )
+
+        case_comparisons = []
+        if dataset_matches:
+            baseline_cases = {
+                row["case_id"]: row for row in baseline["case_results"]
+            }
+            target_cases = {
+                row["case_id"]: row for row in target["case_results"]
+            }
+            for case_id in sorted(baseline_cases.keys() & target_cases.keys()):
+                baseline_case = baseline_cases[case_id]
+                target_case = target_cases[case_id]
+                if baseline_case["input_hash"] != target_case["input_hash"]:
+                    warnings.append(
+                        {
+                            "code": "input_hash_mismatch",
+                            "severity": "error",
+                            "message": (
+                                f"{case_id} の入力ハッシュが異なるため、"
+                                "このケースは比較しません。"
+                            ),
+                        }
+                    )
+                    continue
+                case_comparisons.append(
+                    _compare_case_results(
+                        baseline_case,
+                        target_case,
+                        quality_comparable=evaluator_matches,
+                    )
+                )
+
+        return {
+            "baseline": _suite_comparison_header(baseline),
+            "target": _suite_comparison_header(target),
+            "dataset_comparable": dataset_matches,
+            "quality_comparable": dataset_matches and evaluator_matches,
+            "warnings": warnings,
+            "summary": {
+                "success_rate": _comparison_value(
+                    baseline.get("success_rate"), target.get("success_rate")
+                ),
+                "average_elapsed_seconds": _comparison_value(
+                    baseline.get("average_elapsed_seconds"),
+                    target.get("average_elapsed_seconds"),
+                    include_percent=True,
+                ),
+                "median_elapsed_seconds": _comparison_value(
+                    baseline.get("median_elapsed_seconds"),
+                    target.get("median_elapsed_seconds"),
+                    include_percent=True,
+                ),
+                "p95_elapsed_seconds": _comparison_value(
+                    baseline.get("p95_elapsed_seconds"),
+                    target.get("p95_elapsed_seconds"),
+                    include_percent=True,
+                ),
+            },
+            "case_comparisons": case_comparisons,
         }
 
     def record_quality(self, trial_id: int, quality: QualityEvaluation) -> None:
@@ -743,7 +1176,8 @@ class BenchmarkStorage:
                     r.id AS run_id, r.status AS run_status, r.started_at,
                     r.completed_at, r.api_url, r.input_hash,
                     r.environment_json, v.name AS version_name,
-                    v.change_summary, c.case_id, c.name AS case_name,
+                    v.change_summary, v.git_sha, v.git_dirty,
+                    v.git_source_path, c.case_id, c.name AS case_name,
                     c.staff_count, c.pattern, c.dataset_generation, c.seed,
                     t.id AS trial_id, t.status AS trial_status,
                     t.http_status, t.elapsed_seconds, t.response_status,
@@ -797,4 +1231,9 @@ class BenchmarkStorage:
             report[key.removesuffix("_json")] = (
                 json.loads(raw_value) if raw_value is not None else None
             )
+        report["git_dirty"] = (
+            bool(report["git_dirty"])
+            if report["git_dirty"] is not None
+            else None
+        )
         return report

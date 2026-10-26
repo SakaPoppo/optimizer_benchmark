@@ -25,6 +25,12 @@ def render_report(report: dict) -> None:
         f"{report['version_name']} / {report['case_name']} / "
         f"dataset={report['dataset_generation']} / hash={report['input_hash'][:12]}…"
     )
+    st.caption(
+        f"ローカルAPIソースSHA="
+        f"{report['git_sha'][:12] if report.get('git_sha') else '未取得'} / "
+        f"未コミット変更="
+        f"{'あり' if report.get('git_dirty') else 'なし' if report.get('git_dirty') is not None else '未取得'}"
+    )
     first, second, third, fourth = st.columns(4)
     first.metric("試行状態", report.get("trial_status") or "未実行")
     second.metric("HTTP", report.get("http_status") or "未計測")
@@ -163,6 +169,8 @@ def render_report(report: dict) -> None:
         f"入力原本: {report.get('input_path')} / 応答原本: "
         f"{report.get('response_path') or '未取得'}"
     )
+    with st.expander("実行環境"):
+        st.json(report.get("environment") or {})
 
 
 def render_suite_report(report: dict) -> None:
@@ -171,6 +179,18 @@ def render_suite_report(report: dict) -> None:
         f"{report['version_name']} / {report['mode']} / "
         f"dataset={report['dataset_generation']} / "
         f"hash={report['dataset_hash'][:12]}…"
+    )
+    st.write(report.get("change_summary") or "変更概要なし")
+    git_sha = report.get("git_sha")
+    dirty_label = (
+        "あり" if report.get("git_dirty") else "なし"
+        if report.get("git_dirty") is not None
+        else "未取得"
+    )
+    st.caption(
+        f"ローカルAPIソースSHA={git_sha[:12] if git_sha else '未取得'} / "
+        f"未コミット変更={dirty_label} / "
+        "実際に動作したAPIプロセスとの一致は保証しません"
     )
     completed = int(report["completed_trials"])
     total = int(report["total_trials"])
@@ -268,6 +288,9 @@ def render_suite_report(report: dict) -> None:
                     "CPU%": row["average_cpu_percent"],
                     "ピークMB": row["maximum_peak_memory_mb"],
                     "平均制約違反": row["average_hard_violations"],
+                    "平均最大連勤": (
+                        row["average_maximum_consecutive_work_days"]
+                    ),
                     "夜勤標準偏差": (
                         row["average_night_count_standard_deviation"]
                     ),
@@ -280,14 +303,161 @@ def render_suite_report(report: dict) -> None:
             hide_index=True,
         )
 
+    with st.expander("実行環境と計測条件"):
+        st.json(
+            {
+                "benchmark_environment": report.get("environment") or {},
+                "api_metrics": report.get("resource_metrics") or {},
+                "api_url": report.get("api_url"),
+                "local_api_source_path": report.get("git_source_path"),
+            }
+        )
+
+    trial_results = report.get("trial_results") or []
+    if trial_results:
+        with st.expander("試行明細"):
+            st.dataframe(trial_results, width="stretch", hide_index=True)
+
+
+def render_comparison(comparison: dict) -> None:
+    baseline = comparison["baseline"]
+    target = comparison["target"]
+    st.subheader(
+        f"Suite #{baseline['id']} → Suite #{target['id']} バージョン比較"
+    )
+    st.caption(
+        f"{baseline['version_name']} ({baseline.get('git_sha') or 'SHA未取得'}) → "
+        f"{target['version_name']} ({target.get('git_sha') or 'SHA未取得'})"
+    )
+    for warning in comparison["warnings"]:
+        if warning["severity"] == "error":
+            st.error(warning["message"])
+        else:
+            st.warning(warning["message"])
+
+    summary = comparison["summary"]
+    summary_columns = st.columns(4)
+    summary_specs = (
+        ("生成成功率", "success_rate", "percent"),
+        ("平均応答時間", "average_elapsed_seconds", "seconds"),
+        ("中央値", "median_elapsed_seconds", "seconds"),
+        ("p95", "p95_elapsed_seconds", "seconds"),
+    )
+    for column, (label, key, kind) in zip(summary_columns, summary_specs):
+        values = summary[key]
+        target_value = values["target"]
+        delta = values["delta"]
+        if kind == "percent":
+            value_label = (
+                f"{target_value * 100:.1f}%"
+                if target_value is not None
+                else "未計測"
+            )
+            delta_label = f"{delta * 100:+.1f}pt" if delta is not None else None
+        else:
+            value_label = (
+                f"{target_value:.3f}秒"
+                if target_value is not None
+                else "未計測"
+            )
+            percent_change = values.get("percent_change")
+            delta_label = (
+                f"{delta:+.3f}秒 ({percent_change:+.1f}%)"
+                if delta is not None and percent_change is not None
+                else f"{delta:+.3f}秒" if delta is not None else None
+            )
+        column.metric(label, value_label, delta_label, delta_color="inverse")
+
+    rows = comparison.get("case_comparisons") or []
+    if not rows:
+        st.info("比較可能な同一ケースがありません。")
+        return
+    st.markdown("#### 同一ケース比較")
+    st.dataframe(
+        [
+            {
+                "ケース": row["case_name"],
+                "人数": row["staff_count"],
+                "パターン": row["pattern"],
+                "元成功率": row["baseline_success_rate"],
+                "先成功率": row["target_success_rate"],
+                "成功率差": row["success_rate_delta"],
+                "元平均秒": row["baseline_average_elapsed_seconds"],
+                "先平均秒": row["target_average_elapsed_seconds"],
+                "秒差": row["elapsed_seconds_delta"],
+                "時間変化%": row["elapsed_percent_change"],
+                "制約違反差": row["average_hard_violations_delta"],
+                "最大連勤差": (
+                    row["average_maximum_consecutive_work_days_delta"]
+                ),
+                "夜勤標準偏差差": (
+                    row["average_night_count_standard_deviation_delta"]
+                ),
+                "勤務日数差の変化": row["average_work_count_difference_delta"],
+                "休日数差の変化": row["average_off_count_difference_delta"],
+            }
+            for row in rows
+        ],
+        width="stretch",
+        hide_index=True,
+    )
+
+
+def render_version_report(report: dict) -> None:
+    st.subheader(f"{report['name']} バージョン別レポート")
+    st.write(report.get("change_summary") or "変更概要なし")
+    st.json(
+        {
+            "git_sha": report.get("git_sha"),
+            "git_dirty": report.get("git_dirty"),
+            "git_source_path": report.get("git_source_path"),
+            "created_at": report.get("created_at"),
+            "suite_count": report.get("suite_count"),
+            "standalone_run_count": report.get("standalone_run_count"),
+        }
+    )
+    suites = report.get("suites") or []
+    if suites:
+        st.markdown("#### 一括測定履歴")
+        st.dataframe(
+            [
+                {
+                    "Suite": suite["id"],
+                    "開始": suite["started_at"],
+                    "mode": suite["mode"],
+                    "dataset": suite["dataset_generation"],
+                    "状態": suite["status"],
+                    "進捗": (
+                        f"{suite['completed_trials']}/{suite['total_trials']}"
+                    ),
+                    "成功率": suite["success_rate"],
+                    "平均秒": suite["average_elapsed_seconds"],
+                    "中央値": suite["median_elapsed_seconds"],
+                    "p95": suite["p95_elapsed_seconds"],
+                }
+                for suite in suites
+            ],
+            width="stretch",
+            hide_index=True,
+        )
+    else:
+        st.info("このバージョンの一括測定はありません。")
+
+    standalone_runs = report.get("standalone_runs") or []
+    if standalone_runs:
+        st.markdown("#### 単体測定履歴")
+        st.dataframe(standalone_runs, width="stretch", hide_index=True)
+
 
 settings = Settings.from_env()
 storage = get_storage(str(settings.database_path))
 
 st.title("Optimizer Benchmark")
-st.caption("Phase 3: 固定16ケースの性能・リソース・品質測定")
+st.caption("Phase 4: 保存済み結果のバージョン別レポート・比較")
 
-suite_tab, legacy_tab = st.tabs(["一括測定", "単体測定"])
+suite_tab, legacy_tab, comparison_tab, version_tab = st.tabs(
+    ["一括測定", "単体測定", "バージョン比較", "バージョン別レポート"]
+)
 
 with suite_tab:
     mode_labels = {
@@ -314,7 +484,7 @@ with suite_tab:
         )
         suite_change_summary = st.text_area(
             "変更概要",
-            value="Phase 3 benchmark",
+            value="Phase 4 benchmark",
             key="suite-change-summary",
         )
         suite_mode = st.selectbox(
@@ -350,6 +520,7 @@ with suite_tab:
                 api_url=suite_api_url,
                 api_key=suite_api_key,
                 timeout_seconds=settings.timeout_seconds,
+                optimizer_source_directory=settings.optimizer_source_directory,
             )
             try:
                 suite_report = runner.run_suite(
@@ -419,6 +590,9 @@ with suite_tab:
                         api_url=suite_api_url,
                         api_key=suite_api_key,
                         timeout_seconds=settings.timeout_seconds,
+                        optimizer_source_directory=(
+                            settings.optimizer_source_directory
+                        ),
                     )
                     try:
                         runner.resume_suite(
@@ -454,7 +628,7 @@ with legacy_tab:
         )
         change_summary = st.text_area(
             "変更概要",
-            value="Phase 3 benchmark",
+            value="Phase 4 benchmark",
             key="legacy-change-summary",
         )
         submitted = st.form_submit_button("1回実行")
@@ -471,6 +645,7 @@ with legacy_tab:
                 api_url=api_url,
                 api_key=api_key,
                 timeout_seconds=settings.timeout_seconds,
+                optimizer_source_directory=settings.optimizer_source_directory,
             )
             with st.spinner("optimizer APIを実行しています..."):
                 try:
@@ -506,3 +681,61 @@ with legacy_tab:
             ),
         )
         render_report(storage.get_run_report(selected_run_id))
+
+with comparison_tab:
+    comparable_suites = storage.list_suites()
+    if len(comparable_suites) < 2:
+        st.info("比較には保存済みの一括測定が2件以上必要です。")
+    else:
+        comparable_suite_ids = [suite["id"] for suite in comparable_suites]
+
+        def suite_label(suite_id: int) -> str:
+            suite = next(
+                item for item in comparable_suites if item["id"] == suite_id
+            )
+            return (
+                f"#{suite['id']} {suite['version_name']} / {suite['mode']} / "
+                f"{suite['dataset_generation']} / {suite['status']}"
+            )
+
+        comparison_columns = st.columns(2)
+        with comparison_columns[0]:
+            baseline_suite_id = st.selectbox(
+                "比較元Suite",
+                options=comparable_suite_ids,
+                index=1,
+                format_func=suite_label,
+            )
+        with comparison_columns[1]:
+            target_options = [
+                suite_id
+                for suite_id in comparable_suite_ids
+                if suite_id != baseline_suite_id
+            ]
+            target_suite_id = st.selectbox(
+                "比較対象Suite",
+                options=target_options,
+                index=0,
+                format_func=suite_label,
+            )
+        render_comparison(
+            storage.compare_suites(baseline_suite_id, target_suite_id)
+        )
+
+with version_tab:
+    versions = storage.list_versions()
+    if not versions:
+        st.info("保存済みのバージョンはありません。")
+    else:
+        version_ids = [version["id"] for version in versions]
+        selected_version_id = st.selectbox(
+            "保存済みバージョン",
+            options=version_ids,
+            format_func=lambda version_id: next(
+                f"{version['name']} / Suite {version['suite_count']}件 / "
+                f"単体 {version['standalone_run_count']}件"
+                for version in versions
+                if version["id"] == version_id
+            ),
+        )
+        render_version_report(storage.get_version_report(selected_version_id))

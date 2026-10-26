@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import platform
+import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -30,10 +31,12 @@ class BenchmarkRunner:
         api_key: str,
         timeout_seconds: float,
         transport: httpx.BaseTransport | None = None,
+        optimizer_source_directory: Path | None = None,
     ) -> None:
         self.storage = storage
         self.artifacts = artifacts
         self.api_url = api_url
+        self.optimizer_source_directory = optimizer_source_directory
         self.client = OptimizerClient(
             api_url=api_url,
             api_key=api_key,
@@ -44,7 +47,11 @@ class BenchmarkRunner:
     def run_once(self, *, case_path, version_name: str, change_summary: str) -> dict:
         case = load_fixed_case(case_path)
         self.storage.register_case(case)
-        version_id = self.storage.get_or_create_version(version_name, change_summary)
+        version_id = self.storage.get_or_create_version(
+            version_name,
+            change_summary,
+            **_git_snapshot(self.optimizer_source_directory),
+        )
         run_id = self.storage.create_run(
             version_id=version_id,
             case=case,
@@ -92,7 +99,11 @@ class BenchmarkRunner:
         self.storage.register_dataset(dataset)
         for case in dataset.cases:
             self.storage.register_case(case)
-        version_id = self.storage.get_or_create_version(version_name, change_summary)
+        version_id = self.storage.get_or_create_version(
+            version_name,
+            change_summary,
+            **_git_snapshot(self.optimizer_source_directory),
+        )
         environment = _environment_snapshot()
         trials_per_case = MODE_TRIALS[mode]
         suite_id = self.storage.create_suite(
@@ -215,3 +226,35 @@ def _environment_snapshot() -> dict:
         "optimizer_worker_count": None,
         "solver_seed": None,
     }
+
+
+def _git_snapshot(source_directory: Path | None) -> dict:
+    snapshot = {
+        "git_sha": None,
+        "git_dirty": None,
+        "git_source_path": None,
+    }
+    if source_directory is None:
+        return snapshot
+    resolved = source_directory.resolve()
+    snapshot["git_source_path"] = str(resolved)
+    try:
+        sha = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=resolved,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=resolved,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return snapshot
+    snapshot["git_sha"] = sha or None
+    snapshot["git_dirty"] = bool(status.strip())
+    return snapshot

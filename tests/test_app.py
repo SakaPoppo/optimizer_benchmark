@@ -5,7 +5,7 @@ from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
 
-def test_streamlit_phase3_screen_renders(tmp_path, monkeypatch) -> None:
+def test_streamlit_phase4_screen_renders(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("BENCHMARK_DB_PATH", str(tmp_path / "benchmark.db"))
     monkeypatch.setenv("BENCHMARK_ARTIFACTS_DIR", str(tmp_path / "artifacts"))
 
@@ -16,5 +16,7 @@ def test_streamlit_phase3_screen_renders(tmp_path, monkeypatch) -> None:
     assert [tab.label for tab in app.tabs] == [
         "一括測定",
         "単体測定",
+        "バージョン比較",
+        "バージョン別レポート",
     ]
     assert any(button.label == "新規に一括実行" for button in app.button)
